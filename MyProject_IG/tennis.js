@@ -1,3 +1,27 @@
+function initVariables()
+{
+	/* quaoar_pos = new vec3(-15,10, 50);
+	kamillis_pos = new vec3(-60,-25,-40);
+	pyrona_pos = new vec3(45.0,-axys,0.0);
+	hagaton_pos = new vec3(60,40,-35);
+	ophin_pos = new vec3(0,-axys,0);
+	hal_pos = new vec3(15, 0, 0);
+	spaceman_pos = new vec3(0, -0.27, 0);
+
+	pyrona_rot1 = new vec3(0, 0, 0);
+	pyrona_rot2 = new vec3(0, 0, 0);
+	hal_rot1 = new vec3(0, 0, 0);
+	hal_rot2 = new vec3(0, 0, 0);
+
+	InitWorld();
+
+	light_position = new vec3(-pyrona_pos.x, -pyrona_pos.y, -pyrona_pos.z);
+	light_position_V = [pyrona_pos.x, pyrona_pos.y, pyrona_pos.z];
+
+	animation_orizzontal = 0;
+	animation_vertical = 0;  */
+}
+
 function initWebGL(){
     // inizializing the GL context
 	gl = canvas.getContext("webgl", {antialias: false, depth: true});	
@@ -13,7 +37,8 @@ function Init()
 
 	// Initialize the WebGL canvas
 	canvas = document.getElementById("glcanvas");
-	/* checkbox_shadowmap = document.getElementById("shadowmap");
+
+	 /* checkbox_shadowmap = document.getElementById("shadowmap");
 	checkbox_shadowmap.checked = true;
 
 	checkbox_mix = document.getElementById("mix");
@@ -22,7 +47,8 @@ function Init()
 	slider_velocity = document.getElementById("slider_velocity");
 
 	slider_value = document.getElementById("slider_value");
-	
+	*/
+
 	initVariables();
 	initWebGL();
 	
@@ -56,8 +82,8 @@ function Init()
 	
 	UpdateCanvasSize();
 	UpdateTransformations();
-	ShadowMapInit();
-	requestAnimationFrame(animate); */
+	//ShadowMapInit();
+	//requestAnimationFrame(animate); 
 }
 
 // Called every time the window size is changed.
@@ -75,6 +101,43 @@ function UpdateCanvasSize()
 	canvas.style.height = height + 'px';
 	gl.viewport( 0, 0, canvas.width, canvas.height );
 	UpdateViewMatrices();
+}
+
+function UpdateViewMatrices()
+{
+	/* light_position = new vec3(-pyrona_pos.x, -pyrona_pos.y, -pyrona_pos.z);
+	light_position_V = [pyrona_pos.x, pyrona_pos.y, pyrona_pos.z];
+
+	if(first_person == 0)
+		{
+			CV = trans(1, camera_angle, camera_position);
+		}
+	
+	else if(first_person == 1)
+		{
+			CV = trans_(1, camera_angle, fp_camera_position);
+		}
+	
+	var LV_positive_x = trans_(1.0, light_angles[0], light_position);
+	var LV_negative_x = trans_(1.0, light_angles[1], light_position);
+	var LV_positive_y = trans_(1.0, light_angles[2], light_position);
+	var LV_negative_y = trans_(1.0, light_angles[3], light_position);
+	var LV_positive_z = trans_(1.0, light_angles[4], light_position);
+	var LV_negative_z = trans_(1.0, light_angles[5], light_position);
+
+	LVs = [LV_positive_x, LV_negative_x, LV_positive_y, LV_negative_y, LV_positive_z, LV_negative_z];
+	*/
+} 
+
+function UpdateTransformations()
+{
+	/* MV_spaceman = m_mult(CV, MW_spaceman);
+	MV_quaoar = m_mult(CV, MW_quaoar);
+	MV_kamillis = m_mult(CV, MW_kamillis);
+	MV_pyrona = m_mult(CV, MW_pyrona);	
+	MV_hagaton = m_mult(CV, MW_hagaton);
+	MV_ophin = m_mult(CV, MW_ophin);
+	MV_hal = m_mult(CV, MW_hal); */
 }
 
 function ProjectionMatrix(cw = canvas.width, ch = canvas.height, fov_angle=90 )
