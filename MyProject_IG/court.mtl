@@ -1,0 +1,18 @@
+newmtl Court_Ground
+Kd 0.30 0.55 0.30        # prato verde
+
+newmtl Ground            # area bordo campo
+Kd 0.20 0.45 0.20
+
+newmtl Lines
+Kd 1.00 1.00 1.00        # linee bianche
+
+newmtl Net
+Kd 0.05 0.05 0.05        # rete molto scura
+
+newmtl Net_Part
+Kd 0.10 0.10 0.10        # pali rete
+
+newmtl Net_Part_2
+Kd 0.90 0.90 0.90        # eventuale sagola bianca
+
