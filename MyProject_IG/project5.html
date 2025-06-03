@@ -86,6 +86,9 @@ var boxFS = `
 ///////////////////////////////////////////////////////////////////////////////////
 var boxDrawer;
 var meshDrawer;
+//let meshDrawer1 = null;   // campo
+var meshDrawer2;   // secondo oggetto
+
 var canvas, gl;
 var perspectiveMatrix;	// perspective projection matrix
 var rotX=0, rotY=0, transZ=3, autorot=0;
@@ -112,16 +115,19 @@ function InitWebGL()
 	// ---------------- WebGL global state ----------------
 
 	// *** 1. attiva il blending (lo avrai già fatto) ***
-	gl.enable( gl.BLEND );
-	gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
+	 //gl.enable( gl.BLEND );
+	//gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA ); 
 
 	// *** 2. disattiva il culling ***
-	gl.disable( gl.CULL_FACE );    // <-- aggiungi/rendi permanente
+	    // <-- aggiungi/rendi permanente
 
+	
+	
 	
 	// Initialize the programs and buffers for drawing
 	boxDrawer  = new BoxDrawer();
-	meshDrawer = new MeshDrawer();
+	meshDrawer = new MeshDrawerTennis();
+	meshDrawer2= new MeshDrawer();
 
 	skyBox = new SkyBox(gl);
 	skyBox.loadCubemap([
@@ -175,11 +181,18 @@ function UpdateProjectionMatrix()
 // This is the main function that handled WebGL drawing
 function DrawScene()
 {
+	//gl.useProgram(meshDrawer.prog); 
+	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+
+	
+	
+	/* gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK); */
 	var mv  = GetModelViewMatrix( 0, 0, transZ, rotX, autorot+rotY );
 	var mvp = MatrixMult( perspectiveMatrix, mv );
 
 	// Clear the screen and the depth buffer.
-	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+	
 	
 	skyBox.draw(mv); 
 
@@ -187,11 +200,52 @@ function DrawScene()
 	// Draw the curve and then the line segments that connect the control points.
 	var nrmTrans = [ mv[0],mv[1],mv[2], mv[4],mv[5],mv[6], mv[8],mv[9],mv[10] ];
 
-	gl.useProgram(meshDrawer.prog); 
-	meshDrawer.draw( mvp, mv, nrmTrans );
+	/* var T_campo = [
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, -0.5, 0, 1
+	];
+	var mv_t_campo=MatrixMult(mv,T_campo); */
+
+    
+  	  // cula le facce che puntano “all’indietro”
+
 	if ( showBox.checked ) {
-		boxDrawer.draw( mvp );
+		
+		var mv_box  =  GetModelViewMatrix( 0, 0, transZ, rotX, autorot+rotY ,1);
+		var mvp_box= MatrixMult( perspectiveMatrix, mv_box );
+		boxDrawer.draw( mvp_box );
 	}
+
+	
+	if(meshDrawer){
+		gl.enable(gl.DEPTH_TEST);
+		meshDrawer.draw( mvp, mv, nrmTrans );
+	}
+
+	
+
+	
+	
+
+	 var T = [
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0.6, 0, 1
+		];
+        const mv2  = MatrixMult(mv, T);                // usa la tua MatrixMult
+        const mvp2 = MatrixMult(perspectiveMatrix, mv2); // proiezione * mv2
+        const norm2=  [ mv2[0],mv2[1],mv2[2], mv2[4],mv2[5],mv2[6], mv2[8],mv2[9],mv2[10] ];     
+
+	
+	if (meshDrawer2) {
+        meshDrawer2.draw(mvp2, mv2, norm2);
+    }
+	
+	
+
 	
 }
 
@@ -372,6 +426,7 @@ class LightView
 		var cx = Math.cos( this.rotX );
 		var sx = Math.sin( this.rotX );
 		meshDrawer.setLightDir( -sy, cy*sx, -cy*cx );
+		meshDrawer2.setLightDir( -sy, cy*sx, -cy*cx );
 		DrawScene();
 	}
 	
@@ -445,7 +500,11 @@ window.onload = function() {
 		UpdateProjectionMatrix();
 		DrawScene();
 	}
-	canvas.onwheel = function() { canvas.zoom(0.3*event.deltaY); }
+	canvas.addEventListener("wheel", function(e) {
+    e.preventDefault();                 // blocca lo scroll di pagina
+    canvas.zoom(0.3 * e.deltaY);
+	}, { passive: false });
+
 	canvas.onmousedown = function() {
 		var cx = event.clientX;
 		var cy = event.clientY;
@@ -500,12 +559,14 @@ function AutoRotate( param )
 function ShowTexture( param )
 {
 	meshDrawer.showTexture( param.checked );
+	meshDrawer2.showTexture( param.checked );
 	DrawScene();
 }
 
 function SwapYZ( param )
 {
 	meshDrawer.swapYZ( param.checked );
+	meshDrawer2.swapYZ( param.checked );
 	DrawScene();
 }
 
@@ -538,14 +599,16 @@ function LoadObj( param )
 	}
 }
 
+// per oggetto 2
 function LoadTexture( param )
 {
 	if ( param.files && param.files[0] ) {
 		var reader = new FileReader();
 		reader.onload = function(e) {
-			var img = document.getElementById('texture-img');
+			const  img = new Image();
 			img.onload = function() {
-				meshDrawer.setTexture( img );
+				meshDrawer2.setTexture( img );
+				meshDrawer2.showTexture(true);
 				DrawScene();
 			}
 			img.src = e.target.result;
@@ -554,8 +617,9 @@ function LoadTexture( param )
 	}
 }
 
+
 /**
- * LoadMaterial(file):
+ * LoadMaterial(file):----------- Per oggeetto 1
  * - Se file.type è "image", carica la texture come facevi finora.
  * - Altrimenti, se file.name termina con ".mtl":
  *   • cerca "map_Kd" (caso texture)
@@ -568,7 +632,7 @@ function LoadMaterial(file) {
     if (file.type.startsWith("image/")) {
         const rd = new FileReader();
         rd.onload = e => {
-            const img = document.getElementById("texture-img");
+            const img = new Image();
             img.onload = () => {
                 meshDrawer.setTexture(img);   // attiva texture
                 DrawScene();
@@ -599,7 +663,7 @@ function LoadMaterial(file) {
                     if (!imgFile) return;
                     const imgRd = new FileReader();
                     imgRd.onload = ev2 => {
-                        const img = document.getElementById("texture-img");
+                        const img = new Image();
                         img.onload = () => {
                             meshDrawer.setTexture(img); // attiva texture
                             DrawScene();
@@ -636,6 +700,110 @@ function LoadMaterial(file) {
 }
 // —————— Fine LoadMaterial ——————
 
+function LoadObj2(file)
+{
+    const reader = new FileReader();
+    reader.onload = e => {
+        const objSrc = e.target.result;
+        const mesh   = new ObjMesh();
+        mesh.parse(objSrc);
+
+        // shift/scale ESATTAMENTE come hai fatto per il primo modello
+        const box = mesh.getBoundingBox();
+        const shift = [ -(box.min[0]+box.max[0])/2,
+                        -(box.min[1]+box.max[1])/2,
+                        -(box.min[2]+box.max[2])/2 ];
+        const size  = [ (box.max[0]-box.min[0])/2,
+                        (box.max[1]-box.min[1])/2,
+                        (box.max[2]-box.min[2])/2 ];
+        const scale = 1 / Math.max(...size);
+        mesh.shiftAndScale(shift, scale);
+
+        meshDrawer2 = new MeshDrawer(gl);
+        const buf = mesh.getVertexBuffers();
+        meshDrawer2.setMesh(buf.positionBuffer,
+                            buf.texCoordBuffer,
+                            buf.normalBuffer);
+
+        // (se serve una texture, ricicla LoadMaterial o il PNG)
+        DrawScene();
+    };
+    reader.readAsText(file);
+}
+
+function LoadMaterial2(file) {
+    if (!file || !meshDrawer2) return;
+
+    // 1) Se è un’immagine (PNG/JPG) → la carico come texture
+    if (file.type.startsWith("image/")) {
+        const rd = new FileReader();
+        rd.onload = e => {
+            const img = new Image();
+            img.onload = () => {
+                // Applico la texture al secondo MeshDrawer
+                meshDrawer2.setTexture(img);
+                DrawScene();
+            };
+            img.src = e.target.result;
+        };
+        rd.readAsDataURL(file);
+        return;
+    }
+
+    // 2) Se è un file .mtl
+    if (file.name.toLowerCase().endsWith(".mtl")) {
+        const rd = new FileReader();
+        rd.onload = e => {
+            const txt = e.target.result;
+
+            // 2.a) Cerco map_Kd
+            const mapMatch = txt.match(/^\s*map_Kd\s+([^\s]+)/im);
+            if (mapMatch) {
+                // Se c’è 'map_Kd', chiedo all’utente di selezionare la PNG
+                const wanted = mapMatch[1].trim();
+                alert(`Il .mtl richiede la texture "${wanted}". Selezionala ora.`);
+                const picker = document.createElement("input");
+                picker.type = "file";
+                picker.accept = "image/*";
+                picker.onchange = ev => {
+                    const imgFile = ev.target.files[0];
+                    if (!imgFile) return;
+                    const imgRd = new FileReader();
+                    imgRd.onload = ev2 => {
+                        const img = new Image();
+                        img.onload = () => {
+                            meshDrawer2.setTexture(img);
+                            DrawScene();
+                        };
+                        img.src = ev2.target.result;
+                    };
+                    imgRd.readAsDataURL(imgFile);
+                };
+                picker.click();
+                return;
+            }
+
+            // 2.b) Non c’è map_Kd → cerco Kd r g b (e d/Tr per alpha)
+            const kdMatch = txt.match(/^\s*Kd\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/im);
+            if (kdMatch) {
+                const r = parseFloat(kdMatch[1]);
+                const g = parseFloat(kdMatch[2]);
+                const b = parseFloat(kdMatch[3]);
+                // Cerco anche 'd' per l’opacity (alfa)
+                const dMatch = txt.match(/^\s*d\s+([\d.]+)/im);
+                const a = dMatch ? parseFloat(dMatch[1]) : 1.0;
+
+                meshDrawer2.setDiffuseColor(r, g, b, a);
+                DrawScene();
+                return;
+            }
+
+            // 2.c) Se non c’è né map_Kd né Kd
+            alert("Il .mtl non contiene né `map_Kd` né righe `Kd`. Carica un’altra texture o un altro .mtl.");
+        };
+        rd.readAsText(file);
+    }
+}
 
 function SetShininess( param )
 {
@@ -643,9 +811,39 @@ function SetShininess( param )
 	var s = Math.pow(10,exp/25);
 	document.getElementById('shininess-value').innerText = s.toFixed( s < 10 ? 2 : 0 );
 	meshDrawer.setShininess(s);
+	meshDrawer2.setShininess(s);
 	DrawScene();
 }
 
+////////////////per oggetto 2
+function LoadObj2new( param )
+{
+	if ( param.files && param.files[0] ) {
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			var mesh = new ObjMesh;
+			mesh.parse( e.target.result );
+			var box = mesh.getBoundingBox();
+			var shift = [
+				-(box.min[0]+box.max[0])/2,
+				-(box.min[1]+box.max[1])/2,
+				-(box.min[2]+box.max[2])/2
+			];
+			var size = [
+				(box.max[0]-box.min[0])/2,
+				(box.max[1]-box.min[1])/2,
+				(box.max[2]-box.min[2])/2
+			];
+			var maxSize = Math.max( size[0], size[1], size[2] );
+			var scale = 1/maxSize;
+			mesh.shiftAndScale( shift, scale );
+			var buffers = mesh.getVertexBuffers();
+			meshDrawer2.setMesh( buffers.positionBuffer, buffers.texCoordBuffer, buffers.normalBuffer );
+			DrawScene();
+		}
+		reader.readAsText( param.files[0] );
+	}
+}
 ///////////////////////////////////////////////////////////////////////////////////
 </script>
 
@@ -769,22 +967,34 @@ input[type=range] {
 </div>
 <div class="control-group">
 <div class="control">
-	OBJ model:
+	OBJ model #1:
 	<br/>
 	<input id="obj" type="file" onchange="LoadObj(this)" accept=".obj"/></div>
 
 <!--<div class="control">Texture image:<br/><input id="texture" type="file" onchange="LoadTexture(this)" accept="image/*"/></div>-->
 <div class="control">
-  Materiale (.mtl o immagine):
+  Material (.mtl or img):
   <br/>
   <input id="mat-file" type="file"
          accept=".mtl,image/*"
          onchange="LoadMaterial(this.files[0])"/>
 </div>
 
+<div class="control">
+  OBJ model #2:
+  <input type="file"
+         accept=".obj"
+         onchange="LoadObj2new(this)">
 </div>
-<div class="control-group">
-<img id="texture-img" />
+
+<div class="control">Texture obj 2:<br/><input id="texture" type="file" onchange="LoadTexture(this)" accept="image/*"/>
+</div>
+
+
+
+
+</div>
+
 </div>
 </div>
 </div>
