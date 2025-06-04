@@ -125,6 +125,8 @@ function InitWebGL()
 	meshDrawer = new MeshDrawerTennis();
 	meshDrawer2= new MeshDrawer();
 
+
+
 	skyBox = new SkyBox(gl);
 	skyBox.loadCubemap([
 	"px.png","nx.png",
@@ -189,6 +191,14 @@ function DrawScene()
 {
 	//gl.useProgram(meshDrawer.prog); 
 	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+
+	/**
+	 * 
+	 * 
+	 * 
+	 * 
+	 */
+	
 
 	
 	
@@ -505,6 +515,87 @@ window.onload = function() {
 		UpdateProjectionMatrix();
 		DrawScene();
 	}
+	
+	
+	// 1) Carico “campo.obj”
+    fetch('tennis_c_v6.obj')
+      .then(response => response.text())
+      .then(text => {
+        const mesh = new ObjMesh();
+        mesh.parse(text);
+        // calcolo shift+scale
+        const box = mesh.getBoundingBox();
+        const shift = [
+          -(box.min[0] + box.max[0]) / 2,
+          -(box.min[1] + box.max[1]) / 2,
+          -(box.min[2] + box.max[2]) / 2
+        ];
+        const size = [
+          (box.max[0] - box.min[0]) / 2,
+          (box.max[1] - box.min[1]) / 2,
+          (box.max[2] - box.min[2]) / 2
+        ];
+        const scale = 1 / Math.max(size[0], size[1], size[2]);
+        mesh.shiftAndScale(shift, scale);
+
+        const buf = mesh.getVertexBuffers();
+        meshDrawer.setMesh(
+          buf.positionBuffer,
+          buf.texCoordBuffer,
+          buf.normalBuffer
+        );
+
+        // Carico la texture del campo
+        const imgCampo = new Image();
+        imgCampo.onload = () => {
+          meshDrawer.showTexture(true);
+          meshDrawer.setTexture(imgCampo);
+          DrawScene();
+        };
+        imgCampo.src = 'tex_gpt_15.png';
+      })
+      .catch(err => console.error('Errore fetch(campo.obj):', err));
+
+    // 2) Carico “teapot.obj”
+    fetch('teapot.obj')
+      .then(response => response.text())
+      .then(text => {
+        const mesh2 = new ObjMesh();
+        mesh2.parse(text);
+        const box2 = mesh2.getBoundingBox();
+        const shift2 = [
+          -(box2.min[0] + box2.max[0]) / 2,
+          -(box2.min[1] + box2.max[1]) / 2,
+          -(box2.min[2] + box2.max[2]) / 2
+        ];
+        const size2 = [
+          (box2.max[0] - box2.min[0]) / 2,
+          (box2.max[1] - box2.min[1]) / 2,
+          (box2.max[2] - box2.min[2]) / 2
+        ];
+        const scale2 = 1 / Math.max(size2[0], size2[1], size2[2]);
+        mesh2.shiftAndScale(shift2, scale2);
+
+        const buf2 = mesh2.getVertexBuffers();
+        meshDrawer2.setMesh(
+          buf2.positionBuffer,
+          buf2.texCoordBuffer,
+          buf2.normalBuffer
+        );
+
+        // Carico la texture della teapot
+        const imgTea = new Image();
+        imgTea.onload = () => {
+          meshDrawer2.showTexture(true);
+          meshDrawer2.setTexture(imgTea);
+          DrawScene();
+        };
+        imgTea.src = 'bricks.png';
+      })
+      .catch(err => console.error('Errore fetch(teapot.obj):', err));
+	
+	
+	// Inizializzo gli eventi di mouse/zoom e setTaglia remoti
 	canvas.addEventListener("wheel", function(e) {
     e.preventDefault();                 // blocca lo scroll di pagina
     canvas.zoom(0.3 * e.deltaY);
