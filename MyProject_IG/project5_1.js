@@ -41,8 +41,8 @@ function GetModelViewMatrix(translationX, translationY, translationZ, rotationX,
     ];
 
     // Trasformazione completa: T * R * S (ordine: Scala → Rotazioni → Traslazione)
-    let mv = MatrixMult(S, Rx);
-    mv = MatrixMult(mv, Ry);
+    var mv = MatrixMult(S, Rx);
+    mv = MatrixMult(Rx, Ry);
     mv = MatrixMult(trans, mv);  // traslazione per ultima
 
     return mv;
@@ -314,6 +314,8 @@ class MeshDrawerTennis
 
 		this.numTriangles=0;
 
+		this.texture0=null;
+
 		
 
 
@@ -444,6 +446,11 @@ class MeshDrawerTennis
 		gl.vertexAttribPointer(this.normalLoc, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.normalLoc);
 		
+		if (this.texture0) {
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, this.texture0);  // la texture del campo
+			gl.uniform1i(this.samplerLoc, 0);
+		}
 
 
 
@@ -465,8 +472,8 @@ class MeshDrawerTennis
         return;
     	}
 
-		const texture = gl.createTexture(); 
-		gl.bindTexture(gl.TEXTURE_2D, texture);
+		this.texture0 = gl.createTexture(); 
+		gl.bindTexture(gl.TEXTURE_2D, this.texture0);
 
 
 		// You can set the texture image data using the following command.
@@ -487,7 +494,7 @@ class MeshDrawerTennis
 		//I activate the texture slot
 		gl.activeTexture(gl.TEXTURE0); 
 		//Binding the texture in the tecture slot above
-		gl.bindTexture(gl.TEXTURE_2D, texture); 
+		gl.bindTexture(gl.TEXTURE_2D, this.texture0); 
 		//using slot 0 (beacuse I activate texture0)
 		
 		
@@ -594,7 +601,7 @@ class MeshDrawer
 
 			//sampler2D-> is a special type inGLSL to represent a 2D texture
 			
-			uniform sampler2D tex;
+			uniform sampler2D tex2;
 			uniform bool hasTexture;
 
 			varying vec2 v_tc;
@@ -644,7 +651,7 @@ class MeshDrawer
 
 
 				if(hasTexture && show ){
-					vec4 texcolor = texture2D(tex,v_tc);
+					vec4 texcolor = texture2D(tex2,v_tc);
 					Kd=texcolor;
 				}
 				// "luce diffusa totale" =" colore diffuso"+ "luce ambientale"
@@ -771,6 +778,7 @@ class MeshDrawer
 
 		this.numTriangles=0;
 
+		this.texture2=null;
 		
 
 
@@ -896,6 +904,12 @@ class MeshDrawer
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.NormalBuf);
 		gl.vertexAttribPointer(this.normalLoc, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.normalLoc);
+
+		if (this.texture2) {
+			gl.activeTexture(gl.TEXTURE2);
+			gl.bindTexture(gl.TEXTURE_2D, this.texture2);  // la texture della teapot
+			gl.uniform1i(this.samplerLoc, 2);
+		}
 		
 
 
@@ -915,8 +929,8 @@ class MeshDrawer
 		let hasTexture = img ? 1 : 0;
 		gl.uniform1i(this.hasTexLoc, hasTexture);
 
-		const texture = gl.createTexture(); 
-		gl.bindTexture(gl.TEXTURE_2D, texture);
+		this.texture2 = gl.createTexture(); 
+		gl.bindTexture(gl.TEXTURE_2D, this.texture2);
 
 
 		// You can set the texture image data using the following command.
@@ -932,17 +946,17 @@ class MeshDrawer
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		
-
+		gl.useProgram(this.prog);
 		//I activate the texture slot
 		gl.activeTexture(gl.TEXTURE2); 
 		//Binding the texture in the tecture slot above
-		gl.bindTexture(gl.TEXTURE_2D, texture); 
+		gl.bindTexture(gl.TEXTURE_2D, this.texture2); 
 		//using slot 0 (beacuse I activate texture0)
 		
 		gl.useProgram(this.prog);
 
 		//taking loaction of 'tex' in the program
-		const samplerLoc = gl.getUniformLocation(this.prog, 'tex'); 
+		const samplerLoc = gl.getUniformLocation(this.prog, 'tex2'); 
 		//specification about which slot is the one to use(0)
 		gl.uniform1i(samplerLoc, 2);
 

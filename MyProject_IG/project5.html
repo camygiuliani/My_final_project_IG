@@ -40,10 +40,6 @@ class BoxDrawer {
 		var line = [
 			0,1,   1,3,   3,2,   2,0,
 			4,5,   5,7,   7,6,   6,4,
-
-
-
-
 			0,4,   1,5,   3,7,   2,6 ];
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.linebuffer);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(line), gl.STATIC_DRAW);
@@ -178,6 +174,16 @@ function UpdateProjectionMatrix()
 	perspectiveMatrix = ProjectionMatrix( canvas, transZ );
 }
 
+function makeScaleMatrix(sx, sy, sz) {
+  return [
+    sx, 0,  0,  0,
+    0,  sy, 0,  0,
+    0,  0,  sz, 0,
+    0,  0,  0,  1
+  ];
+}
+
+
 // This is the main function that handled WebGL drawing
 function DrawScene()
 {
@@ -194,7 +200,7 @@ function DrawScene()
 	// Clear the screen and the depth buffer.
 	
 	
-	skyBox.draw(mv); 
+	//skyBox.draw(mv); 
 
 
 	// Draw the curve and then the line segments that connect the control points.
@@ -220,26 +226,25 @@ function DrawScene()
 
 	
 	if(meshDrawer){
-		gl.enable(gl.DEPTH_TEST);
 		meshDrawer.draw( mvp, mv, nrmTrans );
 	}
 
-	
-
-	
-	
-
+	var scale_tea=0.1;
+	var tx=0;
+	var ty=0.05;
+	var tz=-0.7;
 	 var T = [
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0.6, 0, 1
+		scale_tea, 0, 0, 0,
+		0, scale_tea, 0, 0,
+		0, 0, scale_tea, 0,
+		tx, ty, tz, 1
 		];
         const mv2  = MatrixMult(mv, T);                // usa la tua MatrixMult
         const mvp2 = MatrixMult(perspectiveMatrix, mv2); // proiezione * mv2
         const norm2=  [ mv2[0],mv2[1],mv2[2], mv2[4],mv2[5],mv2[6], mv2[8],mv2[9],mv2[10] ];     
 
-	
+
+
 	if (meshDrawer2) {
         meshDrawer2.draw(mvp2, mv2, norm2);
     }
@@ -608,7 +613,7 @@ function LoadTexture( param )
 			const  img = new Image();
 			img.onload = function() {
 				meshDrawer2.setTexture( img );
-				meshDrawer2.showTexture(true);
+				//meshDrawer2.showTexture(true);
 				DrawScene();
 			}
 			img.src = e.target.result;
@@ -719,7 +724,7 @@ function LoadObj2(file)
         const scale = 1 / Math.max(...size);
         mesh.shiftAndScale(shift, scale);
 
-        meshDrawer2 = new MeshDrawer(gl);
+        meshDrawer2 = new MeshDrawer();
         const buf = mesh.getVertexBuffers();
         meshDrawer2.setMesh(buf.positionBuffer,
                             buf.texCoordBuffer,
