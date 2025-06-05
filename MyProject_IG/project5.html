@@ -2,60 +2,18 @@
 <html>
 <head>
 <title>CS 4600 - Project 5</title>
+<link rel="stylesheet" href="style.css">
 <script type="text/javascript" id="includedscript" src="project5_1.js"></script>
 <script type="text/javascript" src="obj.js"></script>
+<script type="text/javascript" src="utilis.js"></script>
+<script type="text/javascript" src="drawers.js"></script>
+
 
 <script type="text/javascript">
 ///////////////////////////////////////////////////////////////////////////////////
 // Below is the code for the object that draws lines.
 ///////////////////////////////////////////////////////////////////////////////////
-class BoxDrawer {
-	constructor()
-	{
-		// Compile the shader program
-		this.prog = InitShaderProgram( boxVS, boxFS );
-		
-		// Get the ids of the uniform variables in the shaders
-		this.mvp = gl.getUniformLocation( this.prog, 'mvp' );
-		
-		// Get the ids of the vertex attributes in the shaders
-		this.vertPos = gl.getAttribLocation( this.prog, 'pos' );
-		
-		// Create the buffer objects
-		
-		this.vertbuffer = gl.createBuffer();
-		var pos = [
-			-1, -1, -1,
-			-1, -1,  1,
-			-1,  1, -1,
-			-1,  1,  1,
-			 1, -1, -1,
-			 1, -1,  1,
-			 1,  1, -1,
-			 1,  1,  1 ];
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos), gl.STATIC_DRAW);
 
-		this.linebuffer = gl.createBuffer();
-		var line = [
-			0,1,   1,3,   3,2,   2,0,
-			4,5,   5,7,   7,6,   6,4,
-			0,4,   1,5,   3,7,   2,6 ];
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.linebuffer);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(line), gl.STATIC_DRAW);
-	}
-	draw( trans )
-	{
-		// Draw the line segments
-		gl.useProgram( this.prog );
-		gl.uniformMatrix4fv( this.mvp, false, trans );
-		gl.bindBuffer( gl.ARRAY_BUFFER, this.vertbuffer );
-		gl.vertexAttribPointer( this.vertPos, 3, gl.FLOAT, false, 0, 0 );
-		gl.enableVertexAttribArray( this.vertPos );
-		gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.linebuffer );
-		gl.drawElements( gl.LINES, 24, gl.UNSIGNED_BYTE, 0 );
-	}
-}
 // Vertex shader source code
 var boxVS = `
 	attribute vec3 pos;
@@ -82,12 +40,15 @@ var boxFS = `
 ///////////////////////////////////////////////////////////////////////////////////
 var boxDrawer;
 var meshDrawer;
-//let meshDrawer1 = null;   // campo
-var meshDrawer2;   // secondo oggetto
+//let meshDrawer1 = null;   // campoinit
+var meshDrawer2;
+var meshDrawer3;   // secondo oggetto
 
 var canvas, gl;
 var perspectiveMatrix;	// perspective projection matrix
 var rotX=0, rotY=0, transZ=3, autorot=0;
+
+const loading_default=1;
 
 // Called once to initialize
 function InitWebGL()
@@ -124,6 +85,7 @@ function InitWebGL()
 	boxDrawer  = new BoxDrawer();
 	meshDrawer = new MeshDrawerTennis();
 	meshDrawer2= new MeshDrawer();
+	meshDrawer3= new MeshDrawer();
 
 
 
@@ -176,14 +138,7 @@ function UpdateProjectionMatrix()
 	perspectiveMatrix = ProjectionMatrix( canvas, transZ );
 }
 
-function makeScaleMatrix(sx, sy, sz) {
-  return [
-    sx, 0,  0,  0,
-    0,  sy, 0,  0,
-    0,  0,  sz, 0,
-    0,  0,  0,  1
-  ];
-}
+
 
 
 // This is the main function that handled WebGL drawing
@@ -239,25 +194,34 @@ function DrawScene()
 		meshDrawer.draw( mvp, mv, nrmTrans );
 	}
 
-	var scale_tea=0.1;
-	var tx=0;
-	var ty=0.05;
-	var tz=-0.7;
-	 var T = [
-		scale_tea, 0, 0, 0,
-		0, scale_tea, 0, 0,
-		0, 0, scale_tea, 0,
-		tx, ty, tz, 1
-		];
-        const mv2  = MatrixMult(mv, T);                // usa la tua MatrixMult
-        const mvp2 = MatrixMult(perspectiveMatrix, mv2); // proiezione * mv2
-        const norm2=  [ mv2[0],mv2[1],mv2[2], mv2[4],mv2[5],mv2[6], mv2[8],mv2[9],mv2[10] ];     
+	
 
 
 
 	if (meshDrawer2) {
+		var s_2=0.1;
+		var tx_2=0;
+		var ty_2=0.05;
+		var tz_2=-0.7;
+		var T_2 = make_homo_matrix(s_2,tx_2,ty_2,tz_2);
+        const mv2  = MatrixMult(mv, T_2);                // usa la tua MatrixMult
+        const mvp2 = MatrixMult(perspectiveMatrix, mv2); // proiezione * mv2
+        const norm2=  [ mv2[0],mv2[1],mv2[2], mv2[4],mv2[5],mv2[6], mv2[8],mv2[9],mv2[10] ];     
         meshDrawer2.draw(mvp2, mv2, norm2);
     }
+
+	if (meshDrawer3) {
+		var s_3=0.01;
+		var tx_3=0;
+		var ty_3=-0.0009;
+		var tz_3=+0.2;
+		var T_3 =  make_homo_matrix(s_3,tx_3,ty_3,tz_3);
+        const mv3  = MatrixMult(mv, T_3);                // usa la tua MatrixMult
+        const mvp3 = MatrixMult(perspectiveMatrix, mv3); // proiezione * mv2
+        const norm3=  [ mv3[0],mv3[1],mv3[2], mv3[4],mv3[5],mv3[6], mv3[8],mv3[9],mv3[10] ];     
+        meshDrawer3.draw(mvp3, mv3, norm3);
+    }
+
 	
 	
 
@@ -296,22 +260,8 @@ function CompileShader( type, source, wgl=gl )
 	return shader;
 }
 
-// Multiplies two matrices and returns the result A*B.
-// The arguments A and B are arrays, representing column-major matrices.
-function MatrixMult( A, B )
-{
-	var C = [];
-	for ( var i=0; i<4; ++i ) {
-		for ( var j=0; j<4; ++j ) {
-			var v = 0;
-			for ( var k=0; k<4; ++k ) {
-				v += A[j+4*k] * B[k+4*i];
-			}
-			C.push(v);
-		}
-	}
-	return C;
-}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 </script>
@@ -323,156 +273,7 @@ function MatrixMult( A, B )
 
 var lightView;
 
-class LightView
-{
-	constructor()
-	{
-		this.canvas = document.getElementById("lightcontrol");
-		this.canvas.oncontextmenu = function() {return false;};
-		this.gl = this.canvas.getContext("webgl", {antialias: false, depth: true});	// Initialize the GL context
-		if (!this.gl) {
-			alert("Unable to initialize WebGL. Your browser or machine may not support it.");
-			return;
-		}
-		
-		// Initialize settings
-		this.gl.clearColor(0.33,0.33,0.33,0);
-		this.gl.enable(gl.DEPTH_TEST);
-		
-		this.rotX = 0;
-		this.rotY = 0;
-		this.posZ = 5;
-		
-		this.resCircle = 32;
-		this.resArrow = 16;
-		this.buffer = this.gl.createBuffer();
-		var data = [];
-		for ( var i=0; i<=this.resCircle; ++i ) {
-			var a = 2 * Math.PI * i / this.resCircle;
-			var x = Math.cos(a);
-			var y = Math.sin(a);
-			data.push( x * .9 );
-			data.push( y * .9 );
-			data.push( 0 );
-			data.push( x );
-			data.push( y );
-			data.push( 0 );
-		}
-		for ( var i=0; i<=this.resCircle; ++i ) {
-			var a = 2 * Math.PI * i / this.resCircle;
-			var x = Math.cos(a);
-			var y = Math.sin(a);
-			data.push( x );
-			data.push( y );
-			data.push( -.05 );
-			data.push( x );
-			data.push( y );
-			data.push( 0.05 );
-		}
-		for ( var i=0; i<=this.resArrow; ++i ) {
-			var a = 2 * Math.PI * i / this.resArrow;
-			var x = Math.cos(a) * .07;
-			var y = Math.sin(a) * .07;
-			data.push( x );
-			data.push( y );
-			data.push( -1 );
-			data.push( x );
-			data.push( y );
-			data.push( 0 );
-		}
-		data.push( 0 );
-		data.push( 0 );
-		data.push( -1.2 );
-		for ( var i=0; i<=this.resArrow; ++i ) {
-			var a = 2 * Math.PI * i / this.resArrow;
-			var x = Math.cos(a) * .15;
-			var y = Math.sin(a) * .15;
-			data.push( x );
-			data.push( y );
-			data.push( -0.9 );
-		}
-		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
-		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(data), this.gl.STATIC_DRAW);
-		
-		// Set the viewport size
-		this.canvas.style.width  = "";
-		this.canvas.style.height = "";
-		const pixelRatio = window.devicePixelRatio || 1;
-		this.canvas.width  = pixelRatio * this.canvas.clientWidth;
-		this.canvas.height = pixelRatio * this.canvas.clientHeight;
-		const width  = (this.canvas.width  / pixelRatio);
-		const height = (this.canvas.height / pixelRatio);
-		this.canvas.style.width  = width  + 'px';
-		this.canvas.style.height = height + 'px';
-		this.gl.viewport( 0, 0, this.canvas.width, this.canvas.height );
-		this.proj = ProjectionMatrix( this.canvas, this.posZ, 30 );
-		
-		// Compile the shader program
-		this.prog = InitShaderProgram( lightViewVS, lightViewFS, this.gl );
-		this.mvp = this.gl.getUniformLocation( this.prog, 'mvp' );
-		this.clr1 = this.gl.getUniformLocation( this.prog, 'clr1' );
-		this.clr2 = this.gl.getUniformLocation( this.prog, 'clr2' );
-		this.vertPos = this.gl.getAttribLocation( this.prog, 'pos' );
-		
-		this.draw();
-		this.updateLightDir();
-		
-		this.canvas.onmousedown = function() {
-			var cx = event.clientX;
-			var cy = event.clientY;
-			lightView.canvas.onmousemove = function() {
-				lightView.rotY += (cx - event.clientX)/lightView.canvas.width*5;
-				lightView.rotX += (cy - event.clientY)/lightView.canvas.height*5;
-				cx = event.clientX;
-				cy = event.clientY;
-				lightView.draw();
-				lightView.updateLightDir();
-			}
-		}
-		this.canvas.onmouseup = this.canvas.onmouseleave = function() {
-			lightView.canvas.onmousemove = null;
-		}
-	}
-	
-	updateLightDir()
-	{
-		var cy = Math.cos( this.rotY );
-		var sy = Math.sin( this.rotY );
-		var cx = Math.cos( this.rotX );
-		var sx = Math.sin( this.rotX );
-		meshDrawer.setLightDir( -sy, cy*sx, -cy*cx );
-		meshDrawer2.setLightDir( -sy, cy*sx, -cy*cx );
-		DrawScene();
-	}
-	
-	draw()
-	{
-		// Clear the screen and the depth buffer.
-		this.gl.clear( this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT );
-		
-		this.gl.bindBuffer( this.gl.ARRAY_BUFFER, this.buffer );
-		this.gl.vertexAttribPointer( this.vertPos, 3, this.gl.FLOAT, false, 0, 0 );
-		this.gl.enableVertexAttribArray( this.buffer );
 
-		this.gl.useProgram( this.prog );
-		var mvp = MatrixMult( this.proj, [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,this.posZ,1 ] );
-		this.gl.uniformMatrix4fv( this.mvp, false, mvp );
-		this.gl.uniform3f( this.clr1, 0.6,0.6,0.6 );
-		this.gl.uniform3f( this.clr2, 0,0,0 );
-		this.gl.drawArrays( this.gl.TRIANGLE_STRIP, 0, this.resCircle*2+2 );
-
-		var mv  = GetModelViewMatrix( 0, 0, this.posZ, this.rotX, this.rotY );
-		var mvp = MatrixMult( this.proj, mv );
-		this.gl.uniformMatrix4fv( this.mvp, false, mvp );
-		this.gl.uniform3f( this.clr1, 1,1,1 );
-		this.gl.drawArrays( this.gl.TRIANGLE_STRIP, 0, this.resCircle*2+2 );
-		this.gl.drawArrays( this.gl.TRIANGLE_STRIP, this.resCircle*2+2, this.resCircle*2+2 );
-		this.gl.uniform3f( this.clr1, 0,0,0 );
-		this.gl.uniform3f( this.clr2, 1,1,1 );
-		this.gl.drawArrays( this.gl.TRIANGLE_STRIP, this.resCircle*4+4, this.resArrow*2+2 );
-		this.gl.drawArrays( this.gl.TRIANGLE_FAN, this.resCircle*4+4 + this.resArrow*2+2, this.resArrow+2 );
-	}
-}
 
 // Vertex shader source code
 const lightViewVS = `
@@ -516,84 +317,128 @@ window.onload = function() {
 		DrawScene();
 	}
 	
+	if(loading_default){
 	
-	// 1) Carico “campo.obj”
-    fetch('tennis_c_v6.obj')
-      .then(response => response.text())
-      .then(text => {
-        const mesh = new ObjMesh();
-        mesh.parse(text);
-        // calcolo shift+scale
-        const box = mesh.getBoundingBox();
-        const shift = [
-          -(box.min[0] + box.max[0]) / 2,
-          -(box.min[1] + box.max[1]) / 2,
-          -(box.min[2] + box.max[2]) / 2
-        ];
-        const size = [
-          (box.max[0] - box.min[0]) / 2,
-          (box.max[1] - box.min[1]) / 2,
-          (box.max[2] - box.min[2]) / 2
-        ];
-        const scale = 1 / Math.max(size[0], size[1], size[2]);
-        mesh.shiftAndScale(shift, scale);
+		// 1) Carico “campo.obj”
+		fetch('tennis_c_v6.obj')
+		.then(response => response.text())
+		.then(text => {
+			const mesh = new ObjMesh();
+			mesh.parse(text);
+			// calcolo shift+scale
+			const box = mesh.getBoundingBox();
+			const shift = [
+			-(box.min[0] + box.max[0]) / 2,
+			-(box.min[1] + box.max[1]) / 2,
+			-(box.min[2] + box.max[2]) / 2
+			];
+			const size = [
+			(box.max[0] - box.min[0]) / 2,
+			(box.max[1] - box.min[1]) / 2,
+			(box.max[2] - box.min[2]) / 2
+			];
+			const scale = 1 / Math.max(size[0], size[1], size[2]);
+			mesh.shiftAndScale(shift, scale);
 
-        const buf = mesh.getVertexBuffers();
-        meshDrawer.setMesh(
-          buf.positionBuffer,
-          buf.texCoordBuffer,
-          buf.normalBuffer
-        );
+			const buf = mesh.getVertexBuffers();
+			meshDrawer.setMesh(
+			buf.positionBuffer,
+			buf.texCoordBuffer,
+			buf.normalBuffer
+			);
 
-        // Carico la texture del campo
-        const imgCampo = new Image();
-        imgCampo.onload = () => {
-          meshDrawer.showTexture(true);
-          meshDrawer.setTexture(imgCampo);
-          DrawScene();
-        };
-        imgCampo.src = 'tex_gpt_15.png';
-      })
-      .catch(err => console.error('Errore fetch(campo.obj):', err));
+			// Carico la texture del campo
+			const imgCampo = new Image();
+			imgCampo.onload = () => {
+			meshDrawer.showTexture(true);
+			meshDrawer.setTexture(imgCampo);
+			DrawScene();
+			};
+			imgCampo.src = 'tex_gpt_15.png';
+		})
+		.catch(err => console.error('Errore fetch(campo.obj):', err));
 
-    // 2) Carico “teapot.obj”
-    fetch('teapot.obj')
-      .then(response => response.text())
-      .then(text => {
-        const mesh2 = new ObjMesh();
-        mesh2.parse(text);
-        const box2 = mesh2.getBoundingBox();
-        const shift2 = [
-          -(box2.min[0] + box2.max[0]) / 2,
-          -(box2.min[1] + box2.max[1]) / 2,
-          -(box2.min[2] + box2.max[2]) / 2
-        ];
-        const size2 = [
-          (box2.max[0] - box2.min[0]) / 2,
-          (box2.max[1] - box2.min[1]) / 2,
-          (box2.max[2] - box2.min[2]) / 2
-        ];
-        const scale2 = 1 / Math.max(size2[0], size2[1], size2[2]);
-        mesh2.shiftAndScale(shift2, scale2);
+		// 2) Carico “teapot.obj”
+		fetch('teapot.obj')
+		.then(response => response.text())
+		.then(text => {
+			const mesh2 = new ObjMesh();
+			mesh2.parse(text);
+			const box2 = mesh2.getBoundingBox();
+			const shift2 = [
+			-(box2.min[0] + box2.max[0]) / 2,
+			-(box2.min[1] + box2.max[1]) / 2,
+			-(box2.min[2] + box2.max[2]) / 2
+			];
+			const size2 = [
+			(box2.max[0] - box2.min[0]) / 2,
+			(box2.max[1] - box2.min[1]) / 2,
+			(box2.max[2] - box2.min[2]) / 2
+			];
+			const scale2 = 1 / Math.max(size2[0], size2[1], size2[2]);
+			mesh2.shiftAndScale(shift2, scale2);
 
-        const buf2 = mesh2.getVertexBuffers();
-        meshDrawer2.setMesh(
-          buf2.positionBuffer,
-          buf2.texCoordBuffer,
-          buf2.normalBuffer
-        );
+			const buf2 = mesh2.getVertexBuffers();
+			meshDrawer2.setMesh(
+			buf2.positionBuffer,
+			buf2.texCoordBuffer,
+			buf2.normalBuffer
+			);
 
-        // Carico la texture della teapot
-        const imgTea = new Image();
-        imgTea.onload = () => {
-          meshDrawer2.showTexture(true);
-          meshDrawer2.setTexture(imgTea);
-          DrawScene();
-        };
-        imgTea.src = 'bricks.png';
-      })
-      .catch(err => console.error('Errore fetch(teapot.obj):', err));
-	
+			// Carico la texture della teapot
+			const imgTea = new Image();
+			imgTea.onload = () => {
+			meshDrawer2.showTexture(true);
+			meshDrawer2.setTexture(imgTea);
+			DrawScene();
+			};
+			imgTea.src = 'bricks.png';
+		})
+		.catch(err => console.error('Errore fetch(teapot.obj):', err));
+		
+		// 3) Coconut object
+		fetch('Tennis_Ball_4._new.obj')
+		.then(response => response.text())
+		.then(text => {
+			const mesh3 = new ObjMesh();
+			mesh3.parse(text);
+			const box3 = mesh3.getBoundingBox();
+			const shift3 = [
+			-(box3.min[0] + box3.max[0]) / 2,
+			-(box3.min[1] + box3.max[1]) / 2,
+			-(box3.min[2] + box3.max[2]) / 2
+			];
+			const size3 = [
+			(box3.max[0] - box3.min[0]) / 2,
+			(box3.max[1] - box3.min[1]) / 2,
+			(box3.max[2] - box3.min[2]) / 2
+			];
+			const scale3 = 1 / Math.max(size3[0], size3[1], size3[2]);
+			mesh3.shiftAndScale(shift3, scale3);
+
+			const buf3 = mesh3.getVertexBuffers();
+			meshDrawer3.setMesh(
+			buf3.positionBuffer,
+			buf3.texCoordBuffer,
+			buf3.normalBuffer
+			);
+
+			// Carico la texture della teapot
+			const img_cocco = new Image();
+			img_cocco.onload = () => {
+			meshDrawer3.showTexture(true);
+			meshDrawer3.setTexture(img_cocco);
+			DrawScene();
+			};
+			img_cocco.src = 'Pallinatexture_3.png';
+		})
+		.catch(err => console.error('Errore fetch(cocco.obj):', err));
+		
+
+
+
+
+	} //end of if loading default
 	
 	// Inizializzo gli eventi di mouse/zoom e setTaglia remoti
 	canvas.addEventListener("wheel", function(e) {
@@ -908,6 +753,7 @@ function SetShininess( param )
 	document.getElementById('shininess-value').innerText = s.toFixed( s < 10 ? 2 : 0 );
 	meshDrawer.setShininess(s);
 	meshDrawer2.setShininess(s);
+	meshDrawer3.setShininess(s);
 	DrawScene();
 }
 
@@ -943,110 +789,7 @@ function LoadObj2new( param )
 ///////////////////////////////////////////////////////////////////////////////////
 </script>
 
-<style>
-html {
-	color: white;
-	background-color: black;
-	font-family: Arial;
-	overflow: hidden;
-}
-body {
-	padding: 0;
-	margin: 0;
-}
-input[type=checkbox], label {
-	cursor: hand;
-}
-input[type=range] {
-	width: 100%;
-}
-#canvas {
-	display: block;
-	position: absolute;
-	top:  0;
-	left: 0;
-	width:  100%;
-	height: 100%;
-}
-#canvas-div {
-	position: relative;
-}
-#controls-div {
-	vertical-align: top;
-	background-color: #333;
-	overflow: auto;
-}
-#controls {
-	padding: 1em;
-}
-.control-group {
-	position: relative;
-	max-width: 12em;
-}
-.control {
-	padding: 0.2em;
-}
-#lightcontrol {
-	width:  12em;
-	height: 12em;
-	background-color: black;
-	outline: 1px solid white;
-	outline-offset: -1px;
-}
-#lightcontrol-label {
-	position: absolute;
-	top: 0.2em;
-	left: 0.2em;
-	pointer-events: none;
-}
-#shininess-label {
-	float: left;
-}
-#shininess-value {
-	float: right;
-	text-align: right;
-	width: 4em;
-}
-@media (orientation: landscape) {
-	#canvas-div {
-		display: inline-block;
-		width:  calc(100% - 14em);
-		height: 100%;
-	}
-	#controls-div {
-		display: inline-block;
-		width:   14em;
-		height: 100%;
-	}
-	.control-group {
-		margin-top: 1em;
-		overflow: hidden;
-	}
-	#texture-img {
-		width: 100%;
-		height: auto;
-	}
-}
-@media (orientation: portrait) {
-	#canvas-div {
-		width:  100%;
-		height: calc(100% - 14em);
-	}
-	#controls-div {
-		width:  100%;
-		height: 14em;
-	}
-	.control-group {
-		display: inline-block;
-		vertical-align: top;
-		margin-left: 2em;
-	}
-	#texture-img {
-		width: auto;
-		height: calc( 100% - 2em );
-	}
-}
-</style>
+
 
 </head>
 <body onresize="WindowResize()">
@@ -1085,6 +828,11 @@ input[type=range] {
 
 <div class="control">Texture obj 2:<br/><input id="texture" type="file" onchange="LoadTexture(this)" accept="image/*"/>
 </div>
+
+<div class="control">
+  <button onclick="resetCamera()">Reset Camera</button>
+</div>
+
 
 
 

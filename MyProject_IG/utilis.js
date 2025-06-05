@@ -35,3 +35,19 @@ function MatrixMult( A, B )
 	}
 	return C;
 }
+
+// Salva i valori iniziali in variabili dedicate
+const initial_rotX = 0;
+const initial_rotY = 0;
+const initial_transZ = 3;
+const initial_autorot = 0;
+
+function resetCamera() {
+  rotX = initial_rotX;
+  rotY = initial_rotY;
+  transZ = initial_transZ;
+  autorot = initial_autorot;
+
+  UpdateProjectionMatrix();
+  DrawScene();
+}
