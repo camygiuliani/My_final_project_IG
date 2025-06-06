@@ -327,7 +327,7 @@ window.onload = function() {
 	if(loading_default){
 	
 		// 1) Carico “campo.obj”
-		fetch('tennis_c_v6.obj')
+		fetch('Objects/tennis_c_v6.obj')
 		.then(response => response.text())
 		.then(text => {
 			const mesh = new ObjMesh();
@@ -366,7 +366,7 @@ window.onload = function() {
 		.catch(err => console.error('Errore fetch(campo.obj):', err));
 
 		// 2) Carico “teapot.obj”
-		fetch('teapot.obj')
+		fetch('Objects/teapot.obj')
 		.then(response => response.text())
 		.then(text => {
 			const mesh2 = new ObjMesh();
@@ -404,7 +404,7 @@ window.onload = function() {
 		.catch(err => console.error('Errore fetch(teapot.obj):', err));
 		
 		// 3) palla tennis object
-		fetch('Tennis_Ball_4._new.obj')
+		fetch('Objects/Tennis_Ball_4._new.obj')
 		.then(response => response.text())
 		.then(text => {
 			const mesh3 = new ObjMesh();
