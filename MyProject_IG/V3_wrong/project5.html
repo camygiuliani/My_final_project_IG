@@ -1,14 +1,16 @@
 <!-- Copyright 2020, Cem Yuksel, University of Utah -->
 <html>
 <head>
-<title>CamyProj</title>
+<title>CamiProj</title>
 <link rel="stylesheet" href="style.css">
-<link rel="icon" href="img/favicon.ico" type="image/x-icon">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 
 <script type="text/javascript" id="includedscript" src="project5_1.js"></script>
 <script type="text/javascript" src="obj.js"></script>
 <script type="text/javascript" src="utilis.js"></script>
 <script type="text/javascript" src="drawers.js"></script>
+<script type="text/javascript" src="shadow_map.js"></script>
+
 
 
 <script type="text/javascript">
@@ -40,6 +42,8 @@ var boxFS = `
 ///////////////////////////////////////////////////////////////////////////////////
 // Below is the core WebGL initialization code.
 ///////////////////////////////////////////////////////////////////////////////////
+
+var lightView;
 var boxDrawer;
 var meshDrawer;
 //let meshDrawer1 = null;   // campoinit
@@ -52,10 +56,24 @@ var rotX=0, rotY=0, transZ=3, autorot=0;
 
 
 // Shadow Mapping
-let shadowFramebuffer, shadowTexture;
+var shadowFramebuffer, shadowTexture;
+var show_shadow_mapping=1;
+const SHADOW_MAP_SIZE = 1024;
 
 
 const loading_default=1;
+
+function GetLightMVPMatrix() {
+	const viewLight = lightView.getViewMatrix();
+	const size = 5;
+	const near = 0.1;
+	const far = 40;
+	const projLight = OrthoMatrix(-size, size, -size, size, near, far);
+	return MatrixMult(projLight, viewLight);
+}
+
+
+var lightMVP ;
 
 // Called once to initialize
 function InitWebGL()
@@ -68,6 +86,13 @@ function InitWebGL()
 		alert("Unable to initialize WebGL. Your browser or machine may not support it.");
 		return;
 	}
+	
+	const ext = gl.getExtension('WEBGL_depth_texture');
+	if (!ext) {
+		return alert('need WEBGL_depth_texture');
+	}
+
+	
 	
 	// Initialize settings
 	gl.clearColor(0,0,0,0);
@@ -87,21 +112,52 @@ function InitWebGL()
 
 	
 	
-	
-	// Initialize the programs and buffers for drawing
+    lightView = new LightView();
 	boxDrawer  = new BoxDrawer();
-	meshDrawer = new MeshDrawerTennis();
+	meshDrawer = new MeshDrawer();
 	meshDrawer2= new MeshDrawer();
-	meshDrawer3= new MeshDrawer();
-
-
-
+	meshDrawer3= new MeshDrawer3();
 	skyBox = new SkyBox(gl);
 	skyBox.loadCubemap([
-	"img/px.png","img/nx.png",
-	"img/py.png","img/ny.png",
-	"img/pz.png","img/nz.png"
+	"px.png","nx.png",
+	"py.png","ny.png",
+	"pz.png","nz.png"
 	]);
+
+	lightMVP = GetLightMVPMatrix();
+
+	if(show_shadow_mapping){
+		// Shadow map setup
+		shadowFramebuffer = gl.createFramebuffer();
+		shadowTexture = gl.createTexture();
+
+		gl.bindTexture(gl.TEXTURE_2D, shadowTexture);
+		gl.texImage2D(
+			gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT,
+			SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, 0,
+			gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null
+		);
+
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, shadowFramebuffer);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, shadowTexture, 0);
+
+		gl.drawBuffers([ ]);
+		gl.readBuffer(gl.NONE);
+
+		const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+		if (status !== gl.FRAMEBUFFER_COMPLETE) {
+			console.error("❌ Shadow framebuffer incompleto!");
+		}
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+
+	} 
 	
 	// Set the viewport size
 	UpdateCanvasSize();
@@ -144,6 +200,18 @@ function UpdateProjectionMatrix()
 {
 	perspectiveMatrix = ProjectionMatrix( canvas, transZ );
 }
+function OrthoMatrix(left, right, bottom, top, near, far) {
+    return [
+        2 / (right - left), 0, 0, 0,
+        0, 2 / (top - bottom), 0, 0,
+        0, 0, -2 / (far - near), 0,
+        -(right + left) / (right - left),
+        -(top + bottom) / (top - bottom),
+        -(far + near) / (far - near),
+        1
+    ];
+}
+
 
 
 
@@ -168,23 +236,21 @@ function DrawScene()
     gl.cullFace(gl.BACK); */
 	var mv  = GetModelViewMatrix( 0, 0, transZ, rotX, autorot+rotY );
 	var mvp = MatrixMult( perspectiveMatrix, mv );
-
+	// Draw the curve and then the line segments that connect the control points.
+	var nrmTrans = [ mv[0],mv[1],mv[2], mv[4],mv[5],mv[6], mv[8],mv[9],mv[10] ];
+	
 	// Clear the screen and the depth buffer.
 	
 	
 	//skyBox.draw(mv); 
 
 
-	// Draw the curve and then the line segments that connect the control points.
-	var nrmTrans = [ mv[0],mv[1],mv[2], mv[4],mv[5],mv[6], mv[8],mv[9],mv[10] ];
+	
 
-	/* var T_campo = [
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, -0.5, 0, 1
-	];
-	var mv_t_campo=MatrixMult(mv,T_campo); */
+
+	
+
+
 
     
   	  // cula le facce che puntano “all’indietro”
@@ -197,24 +263,45 @@ function DrawScene()
 	}
 
 	
-	if(meshDrawer){
-		meshDrawer.draw( mvp, mv, nrmTrans );
-	}
-
 	
 
+	if(show_shadow_mapping){
+		
+		gl.bindFramebuffer(gl.FRAMEBUFFER, shadowFramebuffer);
+		gl.viewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+		gl.clear(gl.DEPTH_BUFFER_BIT);
+		gl.bindTexture(gl.TEXTURE_2D, null);  //
 
+		const lightMVP = GetLightMVPMatrix();
+		meshDrawer.drawDepth(lightMVP);
+		meshDrawer2.drawDepth(lightMVP);
+		meshDrawer3.drawDepth(lightMVP);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.viewport(0, 0, canvas.width, canvas.height);
+		gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+		
+	}
+
+	if(meshDrawer){
+		meshDrawer.draw( mvp, mv, nrmTrans,lightMVP,shadowTexture);
+	}
+	
+
+	//draw( matrixMVP, matrixMV, matrixNormal, lightMVP = null, shadowMap = null )
 
 	if (meshDrawer2) {
 		var s_2=0.1;
 		var tx_2=0;
 		var ty_2=0.02;
-		var tz_2=-0.4;
+		var tz_2=+0.4;
 		var T_2 = make_homo_matrix(s_2,tx_2,ty_2,tz_2);
         const mv2  = MatrixMult(mv, T_2);                // usa la tua MatrixMult
         const mvp2 = MatrixMult(perspectiveMatrix, mv2); // proiezione * mv2
         const norm2=  [ mv2[0],mv2[1],mv2[2], mv2[4],mv2[5],mv2[6], mv2[8],mv2[9],mv2[10] ];     
-        meshDrawer2.draw(mvp2, mv2, norm2);
+        meshDrawer2.draw(mvp2, mv2, norm2,lightMVP,shadowTexture)
+	
+		
     }
 
 	if (meshDrawer3) {
@@ -226,8 +313,11 @@ function DrawScene()
         const mv3  = MatrixMult(mv, T_3);                // usa la tua MatrixMult
         const mvp3 = MatrixMult(perspectiveMatrix, mv3); // proiezione * mv2
         const norm3=  [ mv3[0],mv3[1],mv3[2], mv3[4],mv3[5],mv3[6], mv3[8],mv3[9],mv3[10] ];     
-        meshDrawer3.draw(mvp3, mv3, norm3);
+        //meshDrawer3.draw(mvp3, mv3, norm3);
+		meshDrawer3.draw(mvp3, mv3, norm3,lightMVP,shadowTexture)
     }
+
+
 
 	
 	
@@ -278,7 +368,6 @@ function CompileShader( type, source, wgl=gl )
 // Below is the light view control code
 ///////////////////////////////////////////////////////////////////////////////////
 
-var lightView;
 
 
 
@@ -316,8 +405,9 @@ var showBox;
 
 window.onload = function() {
 	showBox = document.getElementById('show-box');
+	
 	InitWebGL();
-	lightView = new LightView();
+	
 	canvas.zoom = function( s ) {
 		transZ *= s/canvas.height + 1;
 		UpdateProjectionMatrix();
@@ -361,7 +451,7 @@ window.onload = function() {
 			meshDrawer.setTexture(imgCampo);
 			DrawScene();
 			};
-			imgCampo.src = 'img/tex_gpt_15.png';
+			imgCampo.src = 'tex_gpt_15.png';
 		})
 		.catch(err => console.error('Errore fetch(campo.obj):', err));
 
@@ -399,11 +489,11 @@ window.onload = function() {
 			meshDrawer2.setTexture(imgTea);
 			DrawScene();
 			};
-			imgTea.src = 'img/bricks.png';
+			imgTea.src = 'bricks.png';
 		})
 		.catch(err => console.error('Errore fetch(teapot.obj):', err));
 		
-		// 3) palla tennis object
+		// 3) Coconut object
 		fetch('Tennis_Ball_4._new.obj')
 		.then(response => response.text())
 		.then(text => {
@@ -437,9 +527,9 @@ window.onload = function() {
 			meshDrawer3.setTexture(img_cocco);
 			DrawScene();
 			};
-			img_cocco.src = 'img/Pallinatex_3.png';
+			img_cocco.src = 'Pallinatexture_3.png';
 		})
-		.catch(err => console.error('Errore fetch(palla tennis obj):', err));
+		.catch(err => console.error('Errore fetch(cocco.obj):', err));
 		
 
 
