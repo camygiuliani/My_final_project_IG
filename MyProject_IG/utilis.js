@@ -36,6 +36,26 @@ function MatrixMult( A, B )
 	return C;
 }
 
+function IdentityMatrix() {
+    return [
+        1, 0, 0, 0,  // colonna 0
+        0, 1, 0, 0,  // colonna 1
+        0, 0, 1, 0,  // colonna 2
+        0, 0, 0, 1   // colonna 3
+    ];
+}
+
+function transposeMatrix(matrix){
+	let output = []; 
+	for(let col = 0; col < 4; col++){
+		for(let row = 0; row < 4; row++){
+			output.push(matrix[col + (row * 4)])
+		}
+	}
+	return output;
+}
+
+
 // Salva i valori iniziali in variabili dedicate
 const initial_rotX = 0;
 const initial_rotY = 0;
@@ -50,4 +70,40 @@ function resetCamera() {
 
   UpdateProjectionMatrix();
   DrawScene();
+}
+
+function program_init(vertex_shader_text , fragment_shader_text)
+{
+    virtualS = gl.createShader(gl.VERTEX_SHADER);
+    fragmentS = gl.createShader(gl.FRAGMENT_SHADER);
+            
+    gl.shaderSource(virtualS, vertex_shader_text);
+    gl.shaderSource(fragmentS, fragment_shader_text);
+    
+    gl.compileShader(virtualS);
+    gl.compileShader(fragmentS);
+    
+    if(!gl.getShaderParameter(virtualS, gl.COMPILE_STATUS)){
+        console.error('Error compiling shader', gl.getShaderInfoLog(virtualS));
+        }
+    if(!gl.getShaderParameter(fragmentS, gl.COMPILE_STATUS)){
+        console.error('Error compiling shader', gl.getShaderInfoLog(fragmentS));
+        return;
+        }
+            
+    prog = gl.createProgram();
+    gl.attachShader(prog, virtualS);
+    gl.attachShader(prog, fragmentS);
+    
+    gl.linkProgram(prog);        
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.error('ERROR linking program!', gl.getProgramInfoLog(this.prog));
+        return;
+    }
+
+    gl.validateProgram(prog);
+    if(!gl.getProgramParameter(prog, gl.VALIDATE_STATUS)) {
+        console.error('ERROR validating program!', gl.getProgramInfoLog(this.prog));
+    }
+    return prog;
 }
