@@ -122,6 +122,7 @@ class MeshDrawerTennis
 
 			//shadows part 
 			uniform bool mix_set;
+			uniform bool shadow_set;
 			uniform float bias;
 			
 
@@ -206,8 +207,8 @@ class MeshDrawerTennis
 		this.virtualS=gl.createShader(gl.VERTEX_SHADER);
 		this.fragmentS=gl.createShader(gl.FRAGMENT_SHADER);
 
-		gl.shaderSource(this.virtualS, VertexShaderText);
-		gl.shaderSource(this.fragmentS, fragmentShaderText);
+		gl.shaderSource(this.virtualS, V_ShaderText_main);
+		gl.shaderSource(this.fragmentS,F_ShaderText_main);
 		
 		gl.compileShader(this.virtualS);
 		gl.compileShader(this.fragmentS);
@@ -259,6 +260,11 @@ class MeshDrawerTennis
 		this.phong_expoLoc = gl.getUniformLocation(this.prog, 'phong_expo');
 		this.mix_set = gl.getUniformLocation(this.prog, "mix_set");
 		this.bias = gl.getUniformLocation(this.prog, 'bias');
+		this.shadows_set = gl.getUniformLocation(this.prog, 'shadows_set');
+		this.LightP = gl.getUniformLocation(this.prog, 'LightP');
+		this.light_set = gl.getUniformLocation(this.prog, 'light_set');
+
+
 
 
 		
@@ -305,6 +311,11 @@ class MeshDrawerTennis
 		this.numTriangles=0;
 
 		this.texture0=null;
+
+		this.use_shadows=0;
+		gl.uniform1i(this.shadows_set, false);
+		gl.uniform1i(this.light_set, false);
+
 
 		
 
@@ -397,10 +408,19 @@ class MeshDrawerTennis
 	// the model-view transformation matrixMV, the same matrix returned
 	// by the GetModelViewProjection function above, and the normal
 	// transformation matrix, which is the inverse-transpose of matrixMV.
-	draw( matrixMVP, matrixMV, matrixNormal )
+	draw( matrixMVP, matrixMV, matrixNormal,plp=null )
 	{
 		// TODO Complete the WebGL initializations before drawing
 		gl.useProgram( this.prog );
+
+		//! Shadows part
+		gl.uniform1i(this.shadows_set, this.use_shadows);
+		if(this.use_shadows)
+            {
+                gl.uniform1i(this.depth_sampler, 0);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, shadow_texture);
+            }
 
 
 		//----------- setting uniform params
@@ -462,8 +482,8 @@ class MeshDrawerTennis
         return;
     	}
 
-		this.texture0 = gl.createTexture(); 
-		gl.bindTexture(gl.TEXTURE_2D, this.texture0);
+		this.texture1 = gl.createTexture(); 
+		gl.bindTexture(gl.TEXTURE_2D, this.texture1);
 
 
 		// You can set the texture image data using the following command.
@@ -482,9 +502,9 @@ class MeshDrawerTennis
 		
 
 		//I activate the texture slot
-		gl.activeTexture(gl.TEXTURE0); 
+		gl.activeTexture(gl.TEXTURE1); 
 		//Binding the texture in the tecture slot above
-		gl.bindTexture(gl.TEXTURE_2D, this.texture0); 
+		gl.bindTexture(gl.TEXTURE_2D, this.texture1); 
 		//using slot 0 (beacuse I activate texture0)
 		
 		
@@ -492,7 +512,7 @@ class MeshDrawerTennis
 		//taking loaction of 'tex' in the program
 		const samplerLoc = gl.getUniformLocation(this.prog, 'tex'); 
 		//specification about which slot is the one to use(0)
-		gl.uniform1i(samplerLoc, 0);
+		gl.uniform1i(samplerLoc, 1);
 
 		 gl.uniform1i(this.hasTexLoc, 1);   // ← adesso usa la texture
 		/* this.texture_exist = true;
@@ -613,6 +633,7 @@ class MeshDrawer
 			//shadows part
 			uniform bool mix_set;
 			uniform float bias;
+			uniform bool shadow_set;
 			
 
 			// I want a Blinn-Phong shading
@@ -687,8 +708,8 @@ class MeshDrawer
 		this.virtualS_tea =gl.createShader(gl.VERTEX_SHADER);
 		this.fragmentS_tea =gl.createShader(gl.FRAGMENT_SHADER);
 
-		gl.shaderSource(this.virtualS_tea, VertexShaderText_tea);
-		gl.shaderSource(this.fragmentS_tea, fragmentShaderText_tea);
+		gl.shaderSource(this.virtualS_tea, V_ShaderText_main);
+		gl.shaderSource(this.fragmentS_tea, F_ShaderText_main);
 		
 		gl.compileShader(this.virtualS_tea);
 		gl.compileShader(this.fragmentS_tea);
@@ -741,6 +762,12 @@ class MeshDrawer
 		this.hasTexLoc = gl.getUniformLocation(this.prog, 'hasTexture');
 		this.mix_set = gl.getUniformLocation(this.prog, "mix_set");
 		this.bias = gl.getUniformLocation(this.prog, 'bias');
+		this.shadows_set = gl.getUniformLocation(this.prog, 'shadows_set');
+		this.LightP = gl.getUniformLocation(this.prog, 'LightP');
+		this.light_set = gl.getUniformLocation(this.prog, 'light_set');
+
+
+
 
 		gl.uniform1i(this.hasTexLoc,  0);
 
@@ -780,6 +807,11 @@ class MeshDrawer
 		this.numTriangles=0;
 
 		this.texture2=null;
+
+		this.use_shadows=0;
+		gl.uniform1i(this.shadows_set, false);
+		gl.uniform1i(this.light_set, false);
+
 		
 
 
@@ -867,11 +899,19 @@ class MeshDrawer
 	// the model-view transformation matrixMV, the same matrix returned
 	// by the GetModelViewProjection function above, and the normal
 	// transformation matrix, which is the inverse-transpose of matrixMV.
-	draw( matrixMVP, matrixMV, matrixNormal )
+	draw( matrixMVP, matrixMV, matrixNormal,plp=null )
 	{
 		// TODO Complete the WebGL initializations before drawing
 		gl.useProgram( this.prog );
+		//! Shadows part
+		gl.uniform1i(this.shadows_set, this.use_shadows);
 
+		if(this.use_shadows)
+            {
+                gl.uniform1i(this.depth_sampler, 0);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, shadow_texture);
+            }
 
 		//----------- setting uniform params
 
@@ -906,7 +946,7 @@ class MeshDrawer
 		gl.vertexAttribPointer(this.normalLoc, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.normalLoc);
 
-		if (this.texture2) {
+		if (this.texture2 && !this.use_shadows) {
 			gl.activeTexture(gl.TEXTURE2);
 			gl.bindTexture(gl.TEXTURE_2D, this.texture2);  // la texture della teapot
 			gl.uniform1i(this.samplerLoc, 2);
@@ -1073,6 +1113,7 @@ class MeshDrawer3
 			//shadows part
 			uniform bool mix_set;
 			uniform float bias;
+			uniform bool shadow_set;
 
 			// I want a Blinn-Phong shading
 			
@@ -1146,8 +1187,8 @@ class MeshDrawer3
 		this.virtualS_tea =gl.createShader(gl.VERTEX_SHADER);
 		this.fragmentS_tea =gl.createShader(gl.FRAGMENT_SHADER);
 
-		gl.shaderSource(this.virtualS_tea, VertexShaderText_tea);
-		gl.shaderSource(this.fragmentS_tea, fragmentShaderText_tea);
+		gl.shaderSource(this.virtualS_tea, V_ShaderText_main);
+		gl.shaderSource(this.fragmentS_tea, F_ShaderText_main);
 		
 		gl.compileShader(this.virtualS_tea);
 		gl.compileShader(this.fragmentS_tea);
@@ -1200,6 +1241,9 @@ class MeshDrawer3
 		this.hasTexLoc = gl.getUniformLocation(this.prog, 'hasTexture');
 		this.mix_set = gl.getUniformLocation(this.prog, "mix_set");
 		this.bias = gl.getUniformLocation(this.prog, 'bias');
+		this.shadows_set = gl.getUniformLocation(this.prog, 'shadows_set');
+		this.LightP = gl.getUniformLocation(this.prog, 'LightP');
+		this.light_set = gl.getUniformLocation(this.prog, 'light_set');
 
 		gl.uniform1i(this.hasTexLoc,  0);
 
@@ -1239,6 +1283,11 @@ class MeshDrawer3
 		this.numTriangles=0;
 
 		this.texture2=null;
+
+		this.use_shadows=0;
+		gl.uniform1i(this.shadows_set, false);
+		gl.uniform1i(this.light_set, false);
+
 		
 
 
@@ -1326,11 +1375,18 @@ class MeshDrawer3
 	// the model-view transformation matrixMV, the same matrix returned
 	// by the GetModelViewProjection function above, and the normal
 	// transformation matrix, which is the inverse-transpose of matrixMV.
-	draw( matrixMVP, matrixMV, matrixNormal )
+	draw( matrixMVP, matrixMV, matrixNormal,plp=null )
 	{
 		// TODO Complete the WebGL initializations before drawing
 		gl.useProgram( this.prog );
-
+		//! Shadows part
+		gl.uniform1i(this.shadows_set, this.use_shadows);
+		if(this.use_shadows)
+            {
+                gl.uniform1i(this.depth_sampler, 0);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, shadow_texture);
+            }
 
 		//----------- setting uniform params
 
@@ -1365,8 +1421,8 @@ class MeshDrawer3
 		gl.vertexAttribPointer(this.normalLoc, 3, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(this.normalLoc);
 
-		if (this.texture3) {
-			gl.activeTexture(gl.TEXTURE2);
+		if (this.texture3 && !this.use_shadows) {
+			gl.activeTexture(gl.TEXTURE3);
 			gl.bindTexture(gl.TEXTURE_2D, this.texture3);  // la texture della teapot
 			gl.uniform1i(this.samplerLoc, 3);
 		}

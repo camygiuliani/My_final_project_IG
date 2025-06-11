@@ -56,21 +56,30 @@ var F_ShaderText_main = /* glsl */  `
 			//shadows part
 			uniform bool mix_set;
 			uniform float bias;
-			uniform bool shadow_set;
+			uniform bool shadows_set;
             uniform samplerCube depth_sampler;
+            uniform vec3 LightP;
+            uniform bool light_set;
+
 
 
 			// I want a Blinn-Phong shading
 			
 			void main(){
-                //      //////////////////////////////////////      /
-                //           I want to implement Blinn shading     /
-                // /////////////////////////////////////////////////
+                //   //////////////////////////////////////      /
+                //       I want to implement Blinn shading    
+                //  /////////////////////////////////////////////  /
+                
                 float intensity = 1.0;
                 float increment = 2.0;
                 float shadowmap_value;
                 float lightFragDist;
                 vec3 color;
+                mat4 b = mat4(1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, -1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0); 
+
 
 			    
                 //Kd coefficient for diffuse lambertian material
@@ -127,9 +136,22 @@ var F_ShaderText_main = /* glsl */  `
 
 				if(shadows_set){
                      intensity = 0.05;
-                     
+                    vec3 ToLight = normalize(v_frag_pos - LightP);
+                    ToLight = vec3(b*vec4(ToLight, 1.0));
+                    shadowmap_value = textureCube(depth_sampler, ToLight).z;
+                    vec3 LightToFrag = (v_frag_pos - LightP);
+                    lightFragDist = (length(LightToFrag) - 0.1)/(100.0 - 0.1);
+                    vec3 l = normalize(-LightToFrag);
+                    
+                    if((shadowmap_value+bias)>= lightFragDist){
+                            intensity += 0.95;
+                    }
+
+
                 }
-            {    
+                
+                gl_FragColor = intensity*(diffuse_lighting+ specu_lighting);
+                
 				
 				
 

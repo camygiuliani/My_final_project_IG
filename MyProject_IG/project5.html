@@ -9,6 +9,9 @@
 <script type="text/javascript" src="obj.js"></script>
 <script type="text/javascript" src="utilis.js"></script>
 <script type="text/javascript" src="drawers.js"></script>
+<script type="text/javascript" src="shaders.js"></script>
+<script type="text/javascript" src="animation.js"></script>
+
 
 
 <script type="text/javascript">
@@ -33,13 +36,7 @@ var boxFS = `
 		gl_FragColor = vec4(1,1,1,1);
 	}
 `;
-///////////////////////////////////////////////////////////////////////////////////
-</script>
 
-<script type="text/javascript">
-///////////////////////////////////////////////////////////////////////////////////
-// Below is the core WebGL initialization code.
-///////////////////////////////////////////////////////////////////////////////////
 var boxDrawer;
 var meshDrawer;
 //let meshDrawer1 = null;   // campoinit
@@ -52,10 +49,23 @@ var rotX=0, rotY=0, transZ=3, autorot=0;
 
 
 // Shadow Mapping
-let shadowFramebuffer, shadowTexture;
+var shadowFramebuffer, shadowTexture;
+var	light_position_V;
 
+
+var MWs=[];
 
 const loading_default=1;
+///////////////////////////////////////////////////////////////////////////////////
+</script>
+<script type="text/javascript" src="shadow_map.js"></script>
+
+
+<script type="text/javascript">
+///////////////////////////////////////////////////////////////////////////////////
+// Below is the core WebGL initialization code.
+///////////////////////////////////////////////////////////////////////////////////
+
 
 // Called once to initialize
 function InitWebGL()
@@ -85,7 +95,7 @@ function InitWebGL()
 	// *** 2. disattiva il culling ***
 	    // <-- aggiungi/rendi permanente
 
-	
+	//light_position_V = [45.0,-10,0.0];
 	
 	
 	// Initialize the programs and buffers for drawing
@@ -94,6 +104,11 @@ function InitWebGL()
 	meshDrawer2= new MeshDrawer();
 	meshDrawer3= new MeshDrawer3();
 
+
+
+	objs=[meshDrawer,meshDrawer2,meshDrawer3];
+
+	//toggle_shadowmap(1);
 
 
 	skyBox = new SkyBox(gl);
@@ -105,7 +120,18 @@ function InitWebGL()
 	
 	// Set the viewport size
 	UpdateCanvasSize();
+	//ShadowMapInit();
+	requestAnimationFrame(Doanimation)
+
 }
+
+function UpdateViewMatrices()
+{
+	
+	light_position_V = [45.0,-10,0.0];
+
+}	
+
 
 // Called every time the window size is changed.
 function UpdateCanvasSize()
@@ -230,6 +256,8 @@ function DrawScene()
     }
 
 	
+	//ShadowMapDraw();
+
 	
 
 	

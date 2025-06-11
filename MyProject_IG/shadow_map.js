@@ -15,10 +15,11 @@ var b = [
 ];
 
 
-var objs = [campo,teapot, pallina];
+
+var objs = [ meshDrawer,meshDrawer2, meshDrawer3];
 var len_obj= objs.length;
 
-shadow_vs = `
+shadow_vs = /*glsl*/`
     precision mediump float;
 
     uniform mat4 pm;
@@ -36,7 +37,7 @@ shadow_vs = `
     }
 `;
 
-shadow_fs = `
+shadow_fs = /*glsl*/`
     precision mediump float;
     uniform vec3 LightP;
 
@@ -46,7 +47,7 @@ shadow_fs = `
     {
         vec3 LightToFrag = (fPos - LightP);
 
-        float lightFragDist = (length(LightToFrag) - 0.1)/(100.0 - 0.1);
+        float lightFragDist = (length(LightToFrag) - 0.1)/(100.0 - 0.1); //NOTA BENE: 0.1 = f_near; 100.0 = f_far
 
         gl_FragColor = vec4(vec3(lightFragDist), 1.0);   
     }
@@ -101,7 +102,7 @@ function ShadowMapInit()
             gl.useProgram(objs[i].prog);
             gl.uniform1i(objs[i].mix_set, true);
     
-            //????
+            /* //????
             if(i == 5)
                 {
                     objs[i].set_shadowmap_bias(-0.0002);
@@ -113,7 +114,8 @@ function ShadowMapInit()
             else
                 {
                     objs[i].set_shadowmap_bias(0.02);
-                }
+                } */
+            objs[i].set_shadowmap_bias(0.0002);
         }
 
     console.log("shadowmap_init");
@@ -121,12 +123,13 @@ function ShadowMapInit()
 
 function ShadowMapDraw() //draw shadowed objects
 {
+    console.log("Inside ShadowMapDraw\n");
     gl.useProgram(shadowmap_program);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, shadow_texture);
 
     gl.uniform3fv(LightP, light_position_V);
-    for(var i = 0; i<6; i++) //for each camera
+    for(var i = 0; i<len_obj; i++) //for each camera
         {
             gl.bindFramebuffer(gl.FRAMEBUFFER, shadow_framebuffer);
             gl.bindRenderbuffer(gl.RENDERBUFFER, shadow_depthbuffer);
@@ -145,14 +148,15 @@ function ShadowMapDraw() //draw shadowed objects
 
             //draw objects
             var projection = ProjectionMatrix(shadowmap_dim, shadowmap_dim);
-            projection = m_mult(b, projection);
+            projection = MatrixMult(b, projection);
             gl.uniformMatrix4fv(pm, false, projection);
-            gl.uniformMatrix4fv(lv, false, LVs[i]);
+           // gl.uniformMatrix4fv(lv, false, LVs[i]);
 
-            for(var j = 0; j<objs.length; j++)
+            for(var j = 0; j<len_obj; j++)
                 {
-                    gl.uniformMatrix4fv(mw, false, MWs[j]);
-                    var num_triangles = objs[j].vertices.length / 3;
+                    //gl.uniformMatrix4fv(mw, false, MWs[j]);
+                    
+                    var num_triangles = objs[j].num_triangles;
                     gl.bindBuffer(gl.ARRAY_BUFFER, objs[j].vertexBuffer);
                     gl.vertexAttribPointer(l_pos, 3, gl.FLOAT, gl.FALSE, 0, 0);
 		            gl.enableVertexAttribArray(l_pos);
@@ -173,11 +177,12 @@ function ShadowMapDraw() //draw shadowed objects
     
     gl.viewport( 0, 0, canvas.width, canvas.height );
     UpdateViewMatrices();
-    gl.clearColor(1.0, 1.0, 0.5, 1.0);    
-    var debug = new shadowmap_debugger();
-    var debug_MVP = trans(5.0, new vec3(0,0,0), new vec3(0,0,0));
-    debug_MVP = m_mult(CV, debug_MVP);
-    debug_MVP = m_mult(ProjectionMatrix(), debug_MVP);
+    //check if shadowmap is computed correctly
+    //gl.clearColor(1.0, 1.0, 0.5, 1.0);    
+    //var debug = new shadowmap_debugger(); 
+    //var debug_MVP = trans(5.0, new vec3(0,0,0), new vec3(0,0,0));
+    //debug_MVP = MatrixMult(CV, debug_MVP);
+    //debug_MVP = MatrixMult(ProjectionMatrix(), debug_MVP);
 
     //debug.draw(debug_MVP);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
@@ -193,7 +198,7 @@ function toggle_shadowmap(x)
     });
 }
 
-function toggle_mix(x)
+function toggle_mix(x) //mix shadowmap and basic shading
 {
     for(var i = 0; i< objs.length; i++)
     {

@@ -176,6 +176,7 @@ class LightView
 		meshDrawer.setLightDir( -sy, cy*sx, -cy*cx );
 		meshDrawer2.setLightDir( -sy, cy*sx, -cy*cx );
 		meshDrawer3.setLightDir( -sy, cy*sx, -cy*cx );
+		console.log("Light pos: ", this.getLightPosition());
 		DrawScene();
 	}
 	
