@@ -3,6 +3,8 @@
 <head>
 <title>CS 4600 - Project 5</title>
 <link rel="stylesheet" href="style.css">
+<link rel="icon" href="../img/favicon.ico" type="image/x-icon">
+
 <script type="text/javascript" id="includedscript" src="project5_1.js"></script>
 <script type="text/javascript" src="obj.js"></script>
 <script type="text/javascript" src="utilis.js"></script>
@@ -94,12 +96,12 @@ function InitWebGL()
 
 
 
-	skyBox = new SkyBox(gl);
+	/* skyBox = new SkyBox(gl);
 	skyBox.loadCubemap([
 	"px.png","nx.png",
 	"py.png","ny.png",
 	"pz.png","nz.png"
-	]);
+	]); */
 	
 	// Set the viewport size
 	UpdateCanvasSize();
@@ -325,7 +327,7 @@ window.onload = function() {
 	if(loading_default){
 	
 		// 1) Carico “campo.obj”
-		fetch('tennis_c_v6.obj')
+		fetch('../Objects/tennis_c_v6.obj')
 		.then(response => response.text())
 		.then(text => {
 			const mesh = new ObjMesh();
@@ -359,12 +361,12 @@ window.onload = function() {
 			meshDrawer.setTexture(imgCampo);
 			DrawScene();
 			};
-			imgCampo.src = 'tex_gpt_15.png';
+			imgCampo.src = '../img/tex_gpt_15.png';
 		})
 		.catch(err => console.error('Errore fetch(campo.obj):', err));
 
 		// 2) Carico “teapot.obj”
-		fetch('teapot.obj')
+		fetch('../Objects/teapot.obj')
 		.then(response => response.text())
 		.then(text => {
 			const mesh2 = new ObjMesh();
@@ -397,12 +399,12 @@ window.onload = function() {
 			meshDrawer2.setTexture(imgTea);
 			DrawScene();
 			};
-			imgTea.src = 'bricks.png';
+			imgTea.src = '../img/bricks.png';
 		})
 		.catch(err => console.error('Errore fetch(teapot.obj):', err));
 		
 		// 3) Coconut object
-		fetch('Tennis_Ball_4._new.obj')
+		fetch('../Objects/Tennis_Ball_4._new.obj')
 		.then(response => response.text())
 		.then(text => {
 			const mesh3 = new ObjMesh();
@@ -435,7 +437,7 @@ window.onload = function() {
 			meshDrawer3.setTexture(img_cocco);
 			DrawScene();
 			};
-			img_cocco.src = 'Pallinatexture_3.png';
+			img_cocco.src = '../img/Pallinatexture_2.png';
 		})
 		.catch(err => console.error('Errore fetch(cocco.obj):', err));
 		
