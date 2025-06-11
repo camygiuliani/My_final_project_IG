@@ -176,6 +176,7 @@ class LightView
 		meshDrawer.setLightDir( -sy, cy*sx, -cy*cx );
 		meshDrawer2.setLightDir( -sy, cy*sx, -cy*cx );
 		meshDrawer3.setLightDir( -sy, cy*sx, -cy*cx );
+		console.log("Light pos: ", this.getLightPosition());
 		DrawScene();
 	}
 	
@@ -205,6 +206,22 @@ class LightView
 		this.gl.uniform3f( this.clr2, 1,1,1 );
 		this.gl.drawArrays( this.gl.TRIANGLE_STRIP, this.resCircle*4+4, this.resArrow*2+2 );
 		this.gl.drawArrays( this.gl.TRIANGLE_FAN, this.resCircle*4+4 + this.resArrow*2+2, this.resArrow+2 );
+	}
+
+	getLightPosition(){
+
+	const r = this.posZ; // distanza della "telecamera" nel view
+	const cy = Math.cos(this.rotY);
+	const sy = Math.sin(this.rotY);
+	const cx = Math.cos(this.rotX);
+	const sx = Math.sin(this.rotX);
+
+	// luce posizionata su una sfera attorno all'origine
+	const x = -sy * r;
+	const y = cy * sx * r;
+	const z = -cy * cx * r;
+
+	return [x, y, z];
 	}
 }
 
