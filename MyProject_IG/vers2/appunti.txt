@@ -1,0 +1,92 @@
+class SphereDrawer {
+	constructor(gl, radius = 1, latBands = 30, longBands = 30) {
+		this.gl = gl;
+		const sphere = createSphere(radius, latBands, longBands);
+
+		// Create buffers
+		this.positionBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, sphere.positions, gl.STATIC_DRAW);
+
+		this.normalBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, sphere.normals, gl.STATIC_DRAW);
+
+		this.indexBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, sphere.indices, gl.STATIC_DRAW);
+
+		this.indexCount = sphere.indices.length;
+
+		// Compile shader
+		this.program = InitShaderProgram(sphereVS, sphereFS, gl);
+		this.aPos = gl.getAttribLocation(this.program, "pos");
+		this.aNormal = gl.getAttribLocation(this.program, "normal");
+		this.uMVP = gl.getUniformLocation(this.program, "mvp");
+		this.uMV = gl.getUniformLocation(this.program, "mv");
+		this.uNormalMatrix = gl.getUniformLocation(this.program, "normalMatrix");
+		this.uLightDir = gl.getUniformLocation(this.program, "lightDir");
+		this.uColor = gl.getUniformLocation(this.program, "color");
+	}
+
+	draw(mvp, mv, normalMatrix, lightDir = [0, 1, 1], color = [1.0, 1.0, 0.0]) {
+		const gl = this.gl;
+		gl.useProgram(this.program);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+		gl.vertexAttribPointer(this.aPos, 3, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(this.aPos);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+		gl.vertexAttribPointer(this.aNormal, 3, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(this.aNormal);
+
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+
+		gl.uniformMatrix4fv(this.uMVP, false, mvp);
+		gl.uniformMatrix4fv(this.uMV, false, mv);
+		gl.uniformMatrix3fv(this.uNormalMatrix, false, new Float32Array(normalMatrix));
+		gl.uniform3fv(this.uLightDir, lightDir);
+		gl.uniform3fv(this.uColor, color);
+
+		gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_SHORT, 0);
+	}
+}
+
+const sphereVS= /*glsl*/`
+	attribute vec3 pos;
+	attribute vec3 normal;
+
+	uniform mat4 mvp;
+	uniform mat4 mv;
+	uniform mat3 normalMatrix;
+
+	varying vec3 vNormal;
+	varying vec3 vPosition;
+
+	void main() {
+		gl_Position = mvp * vec4(pos, 1.0);
+		vPosition = vec3(mv * vec4(pos, 1.0));
+		vNormal = normalize(normalMatrix * normal);
+	}
+	`;
+
+const sphereFS= /*glsl*/`
+	precision mediump float;
+
+	uniform vec3 lightDir;
+	uniform vec3 color;
+
+	varying vec3 vNormal;
+	varying vec3 vPosition;
+
+	void main() {
+		vec3 n = normalize(vNormal);
+		vec3 l = normalize(lightDir);
+		float diff = max(dot(n, l), 0.0);
+		vec3 ambient = 0.7 * color;
+		vec3 diffuse = diff * color;
+		gl_FragColor = vec4(ambient + diffuse, 1.0);
+	}
+
+	`;
