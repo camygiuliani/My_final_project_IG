@@ -262,6 +262,125 @@ function drawLightDot(position, viewMatrix, projectionMatrix) {
 }
 
 
+
+/**
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+var sphereVS = /*glsl*/`
+	attribute vec3 pos;
+
+	uniform mat4 mvp;
+	varying float vDist;
+
+	void main() {
+		gl_Position = mvp * vec4(pos, 1.0);
+		vDist = length(pos); // distanza dal centro per alone
+	}
+`;
+
+var sphereFS = /*glsl*/`
+	precision mediump float;
+
+	uniform vec3 color;
+	varying float vDist;
+
+	void main() {
+		float alpha = 1.0 - smoothstep(0.0, 1.0, vDist);
+		gl_FragColor = vec4(color, alpha * 0.7); // alone morbido
+		//gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0); // Sole giallo acceso
+		//gl_FragColor = vec4(color, 1.0); // colore costante
+		gl_FragColor = vec4(color, 0.6); // semi-trasparente
+
+
+
+}
+`;
+class SunDrawer {
+	constructor() {
+		this.gl = gl;
+
+		// === Shaders ===
+		this.prog = InitShaderProgram(sphereVS, sphereFS, gl);
+		if (!this.prog) {
+			console.error("❌ Shader program x SunDrawer non inizialized. Check shaders.");
+			return;
+		}
+
+		this.mvpLoc = gl.getUniformLocation(this.prog, "mvp");
+		this.colorLoc = gl.getUniformLocation(this.prog, "color");
+
+		// === Geometry (sphere) ===
+		const latitudeBands = 20;
+		const longitudeBands = 20;
+		const radius = 1.0;
+		const vertices = [];
+
+		for (let lat = 0; lat <= latitudeBands; ++lat) {
+			const theta = lat * Math.PI / latitudeBands;
+			const sinTheta = Math.sin(theta);
+			const cosTheta = Math.cos(theta);
+
+			for (let lon = 0; lon <= longitudeBands; ++lon) {
+				const phi = lon * 2 * Math.PI / longitudeBands;
+				const sinPhi = Math.sin(phi);
+				const cosPhi = Math.cos(phi);
+
+				const x = cosPhi * sinTheta;
+				const y = cosTheta;
+				const z = sinPhi * sinTheta;
+				vertices.push(x * radius, y * radius, z * radius);
+			}
+		}
+
+		const indices = [];
+		for (let lat = 0; lat < latitudeBands; ++lat) {
+			for (let lon = 0; lon < longitudeBands; ++lon) {
+				const first = (lat * (longitudeBands + 1)) + lon;
+				const second = first + longitudeBands + 1;
+				indices.push(first, second, first + 1);
+				indices.push(second, second + 1, first + 1);
+			}
+		}
+
+		// === VBO e IBO ===
+		this.vertexBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+		this.indexBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+		this.indexCount = indices.length;
+		this.posLoc = gl.getAttribLocation(this.prog, "pos");
+	}
+
+	draw(mvpMatrix, color = [1.0, 1.0, 0.0]) {
+		const gl = this.gl;
+
+		gl.useProgram(this.prog);
+		gl.uniformMatrix4fv(this.mvpLoc, false, mvpMatrix);
+		gl.uniform3fv(this.colorLoc, color);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+		gl.enableVertexAttribArray(this.posLoc);
+		gl.vertexAttribPointer(this.posLoc, 3, gl.FLOAT, false, 0, 0);
+
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+		gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_SHORT, 0);
+	}
+}
+
+
+
+
+
+
 /**
  * 
  * 
