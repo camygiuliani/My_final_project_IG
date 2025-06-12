@@ -40,6 +40,7 @@ var boxFS = `
 ///////////////////////////////////////////////////////////////////////////////////
 // Below is the core WebGL initialization code.
 ///////////////////////////////////////////////////////////////////////////////////
+var lightView;
 var boxDrawer;
 var meshDrawer;
 //let meshDrawer1 = null;   // campoinit
@@ -229,6 +230,13 @@ function DrawScene()
         meshDrawer3.draw(mvp3, mv3, norm3);
     }
 
+    	// === Disegna un puntino alla posizione della luce ===
+	if (lightView && typeof lightView.getLightPosition === "function") {
+		var lightPos = lightView.getLightPosition();
+		drawLightDot(lightPos, mv, perspectiveMatrix);
+	}
+
+
 	
 	
 
@@ -278,7 +286,7 @@ function CompileShader( type, source, wgl=gl )
 // Below is the light view control code
 ///////////////////////////////////////////////////////////////////////////////////
 
-var lightView;
+
 
 
 

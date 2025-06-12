@@ -228,6 +228,43 @@ class LightView
 /**
  * 
  * 
+ */
+
+function drawLightDot(position, viewMatrix, projectionMatrix) {
+	const dotProg = InitShaderProgram(`
+		attribute vec3 pos;
+		uniform mat4 mvp;
+		void main() {
+			gl_PointSize = 10.0;
+			gl_Position = mvp * vec4(pos, 1.0);
+		}
+	`, `
+		precision mediump float;
+		void main() {
+			gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0); // giallo
+		}
+	`);
+
+	const mvp = MatrixMult(projectionMatrix, MatrixMult(viewMatrix, make_homo_matrix(1,position[0],position[1],position[2])));
+	const posLoc = gl.getAttribLocation(dotProg, 'pos');
+	const mvpLoc = gl.getUniformLocation(dotProg, 'mvp');
+
+	const buf = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0]), gl.STATIC_DRAW);
+
+	gl.useProgram(dotProg);
+	gl.uniformMatrix4fv(mvpLoc, false, mvp);
+	gl.enableVertexAttribArray(posLoc);
+	gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+
+	gl.drawArrays(gl.POINTS, 0, 1);
+}
+
+
+/**
+ * 
+ * 
  * 
  * 
  * 
